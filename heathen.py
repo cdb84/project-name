@@ -8,20 +8,20 @@ def get_abs_path(local):
 '''
 Execute the program denoted by cmd[0], sending in cmd[1:] as args
 '''
-def exec_helper(cmd):
-    process_output = ""
+def execute(args):
+    output = ""
     #Test starting the process
     try:
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+        process = subprocess.Popen(args, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
     except OSError:
         #Return with failure 
         return str("404: "+str(sys.exc_info()))
     #pipe the input in and return it to the caller
-    for stdout_line in iter(process.stdout.readline, ""):
-        process_output+= stdout_line
-    for stderr_line in iter(process.stderr.readline, ""):
-        process_output+="STDERR: "+stderr_line
+    for stdout in iter(process.stdout.readline, ""):
+        output += stdout
+    for stderr in iter(process.stderr.readline, ""):
+        output += stderr
     process.wait()
     return process_output
 '''
