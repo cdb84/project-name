@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "lawless.h"
+#include "heathen.h"
 /*
  * DATA SECTION
  */
