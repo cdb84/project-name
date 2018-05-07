@@ -23,6 +23,17 @@ For data that is POSTed to the webserver, this is simply sent in as arguments
 to the program and then converted back into a dictionary, similar to the way
 PHP handles POST data. This is probably also equally terrible.
 
+## Usage
+### Server
+`python heathen.py [port] [-ssl]`
+
+Note that SSL functionality is not yet confirmed to work properly (or even 
+safely.)
+
+### Browser
+Simply navigate to the webserver's address, and enter the URL of an executable. 
+That's all!
+
 ## TODO
 
 - [ ] Implement HTTPS in practice (it is there in theory currently)
