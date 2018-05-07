@@ -16,6 +16,6 @@ dictionary, similar to the way PHP handles POST data. This is probably also equa
 
 ## TODO
 
-[ ] Implement HTTPS in practice (it is there in theory currently)
-[ ] Allow the uploading of files to the webserver
-[ ] Allow more than just 'text/html' mimetypes
+[] Implement HTTPS in practice (it is there in theory currently)
+[] Allow the uploading of files to the webserver
+[] Allow more than just 'text/html' mimetypes
