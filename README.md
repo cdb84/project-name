@@ -30,3 +30,4 @@ PHP handles POST data. This is probably also equally terrible.
 - [ ] Allow more than just 'text/html' mimetypes
 - [ ] Do multithreading so that the entire server doesn't get held up if there's
       one long request
+- [ ] Migrate the entire webserver over to C
