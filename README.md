@@ -1,4 +1,4 @@
-# lawless-webserver
+# heathen-webserver
 A webserver I shouldn't have made but still did. On the plus side, you can do webpage preprocessing in C now.
 ## This Is Terrifying
 I know everyone hates on PHP, but I miss it ever so slighty now having preprocessed in C. Anyway, this repository is more
