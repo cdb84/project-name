@@ -28,7 +28,7 @@ int sift_args( struct post_dict buffer[], int argc, char* args[] ){
  */
 int indexof( struct post_dict haystack[], int haystackc, char* needle ){
   for ( int i = 0; i < haystackc; i++ ){
-    if ( !strcmp( haystack[i].index, needle) ){
+    if ( !strcmp( haystack[i].index, needle ) ){
       return i;
     }
   }
