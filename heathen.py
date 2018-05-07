@@ -117,7 +117,7 @@ def run_ssl(server_class=HTTPServer, handler_class=SpecialPreprocessor,
     
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Lawless Webserver: a"+
+    parser = argparse.ArgumentParser(description="Heathen Webserver: a"+
                                      " ridiculously dangerous webserver that"+
                                      " allows preprocessing to any executable")
     parser.add_argument("port", help="The port to bind to.", type=int)
