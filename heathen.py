@@ -19,6 +19,7 @@ def execute(args):
                                    stderr=subprocess.PIPE)
     except OSError:
         #Return with failure (typically can't find file)
+        print args
         return str("404: "+str(sys.exc_info()))
     #pipe the input in and return it to the caller
     for stdout in iter(process.stdout.readline, ""):
@@ -155,7 +156,8 @@ def serve_inline(inline_filep, args=[]):
             try:
                 inline_module_extfilep = (inline_filep
                                        +MODULES_SUBDIRECTORY
-                                       +str(module_count)+MODULE_EXT)
+                                       +str(i)+MODULE_EXT)
+
                 #record the time of this particular module file
                 inline_module_exec_time = os.stat(
                     inline_module_extfilep).st_mtime
@@ -163,15 +165,23 @@ def serve_inline(inline_filep, args=[]):
                 if inline_file_time > inline_module_exec_time:
                     #recompile this module
                     module_compile(i, inline_filep, compiler_string, inlines)
-                #execute this module, append output to response
-                args.insert(0, inline_module_extfilep)
-                response += execute(args)
             except OSError:
                 #assume the file does not exist, compile a new one
                 #compile this module, append output to response
                 module_compile(i, inline_filep, compiler_string, inlines)
-                args.insert(0, inline_module_extfilep)
-                response += execute(args)
+        module_index = 0
+        for this_line in lines:
+            if this_line not in inlines and not INLINE_FLAG in this_line:
+                response += this_line
+            elif module_index < module_count:
+                #composite args and then execute
+                temp_post = args
+                module_index += 1
+                inline_module_extfilep = (inline_filep
+                                       +MODULES_SUBDIRECTORY
+                                       +str(module_index)+MODULE_EXT)
+                temp_post.insert(0, inline_module_extfilep)
+                response+=execute(args)
     except:
         response += str("500: "+str(sys.exc_info()))
     return response
