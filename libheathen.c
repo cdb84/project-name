@@ -25,6 +25,7 @@ int sift_args( struct post_dict buffer[], int argc, char* args[] ){
 }
 /*
  * Returns index in post_dict haystack of 'needle' identifier 
+ * returns -1 if no needle in haystack
  */
 int indexof( struct post_dict haystack[], int haystackc, char* needle ){
   for ( int i = 0; i < haystackc; i++ ){

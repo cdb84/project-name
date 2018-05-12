@@ -1,5 +1,5 @@
-#ifndef _HEATHEN_H
-#define _HEATHEN_H
+#ifndef _LIBHEATHEN_H
+#define _LIBHEATHEN_H
 #include <string.h>
 struct post_dict{
   char* index;
