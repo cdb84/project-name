@@ -181,7 +181,7 @@ def serve_inline(inline_filep, args=[]):
                                        +MODULES_SUBDIRECTORY
                                        +str(module_index)+MODULE_EXT)
                 temp_post.insert(0, inline_module_extfilep)
-                response+=execute(args)
+                response+=execute(temp_post)
     except:
         response += str("500: "+str(sys.exc_info()))
     return response
