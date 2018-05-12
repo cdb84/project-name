@@ -26,7 +26,7 @@ def execute(args):
     for stderr in iter(process.stderr.readline, ""):
         output += stderr
     process.wait()
-    return process_output
+    return output
 '''
 Read a text file line by line; returns those lines compounded into a string
 '''
@@ -83,27 +83,40 @@ def get_compiler_string(line):
         if record and character is not COMPILER_STRING_SIG:
             result += character
     return result
+def get_ext(compiler_string):
+    psplit = compiler_string.split(" ")
+    for item in psplit:
+        if INPUT in item:
+            return item.replace(INPUT, "")
+    return ""
 def module_compile(module_count, inline_sourcep, compiler_string, inlines):
+    subdirectory = inline_sourcep+MODULES_SUBDIRECTORY
+    #print "In module compile, ", module_count, inline_sourcep, compiler_string
+    #print inlines
+    src_ext = get_ext(compiler_string)
     #we will write to the following file to contain the source from the inlines
-    inline_module_srcfilep = (inline_filep
+    inline_module_srcfilep = (inline_sourcep
                                        +MODULES_SUBDIRECTORY
-                                       +str(module_count))
+                                       +str(module_count)+src_ext)
     #we will pipe the following to the compiler string to see that the
     #output filepath equals this string
-    inline_module_extfilep = (inline_filep
+    inline_module_extfilep = (inline_sourcep
                                        +MODULES_SUBDIRECTORY
                                        +str(module_count)+MODULE_EXT)
-    compiler_string = compiler_string.replace(INPUT, inline_module_srcfilep)
+    compiler_string = compiler_string.replace(INPUT+src_ext,
+                                              inline_module_srcfilep)
     compiler_string = compiler_string.replace(OUTPUT, inline_module_extfilep)
     args = compiler_string.split(" ")
     #we gotta create the source for this module
+    #this crashes if there isn't a modules directory to look into
+    if not os.path.exists(subdirectory):
+        os.makedirs(subdirectory)
     with open(inline_module_srcfilep, 'w') as source:
         source.write(inlines)
     #now compile that file we just wrote using the source-defined compiler
     #string
-    return exec_helper(args)
-def serve_inline(inline_filep):
-    return serve_inline(inline_filep, [])
+    #print args
+    return execute(args)
 '''
 Generates a response from an inline file; this funcion will attempt the 
 following:
@@ -113,25 +126,29 @@ following:
   C) to compile new modules if they don't exist
   D) to run these newly compiled modules
 '''
-def serve_inline(inline_filep, args):
+def serve_inline(inline_filep, args=[]):
     response = ""
     #try/except in case this file does not exist, etcetera
     try:
-        compiler_string, inlines = ""
+        compiler_string = inlines = ""
         record = False
-        module_count, inline_file_time = 0
+        module_count = inline_file_time = 0
         #we're gonna scan through the file and take it line by line to
         #determine where the inline portion is, and how it is compiled.
         with open(inline_filep, 'r') as i:
-            this_line = i.readline()
+            lines = i.readlines()
+        for this_line in lines:
+            #print this_line
             #this is going to be the hardest part
             if INLINE_FLAG in this_line:
+                #print "Found an inline flag in ", inline_filep
                 #switch record flag
                 record = not record
                 #if record has just recently been switched to true, record:
                 if record:
                     #which module this is
                     module_count += 1
+                    #print "Module count now equals ", module_count
                     #which compiler string to use
                     compiler_string = get_compiler_string(this_line)
             #don't take any lines with the damn inline flag in it 
@@ -139,8 +156,10 @@ def serve_inline(inline_filep, args):
                 inlines += this_line
         #TEST HERE FOR IF THE MODULE EXISTS AND HAS A COMPILE DATE OLDER
         #THAN THE SOURCE .inl FILE
-        inline_file_time = os.stat(inline_filep).st_mtime            
-        for i in module_count:
+        inline_file_time = os.stat(inline_filep).st_mtime
+        #print module_count
+        for i in range(1, module_count+1):
+            #print "module ", i
             try:
                 inline_module_extfilep = (inline_filep
                                        +MODULES_SUBDIRECTORY
@@ -151,21 +170,18 @@ def serve_inline(inline_filep, args):
                 #compare it to the original inline source file
                 if inline_file_time > inline_module_exec_time:
                     #recompile this module
-                    #execute this module, append output to response
-                    module_compile(i, inline_filep, compile_string, inlines)
-                else:
-                    #execute the module, since it is apparently newly compiled
-                    #as compared to the inline source's modification time
-                    #also, accomodate for arguments sent via POST
-                    args.insert(0, inline_module_extfilep)
-                    response += exec_helper(args)
-            except:
-                #assume the file does not exist, compile a new one!
-                #compile this module, append output to response
-                module_compile(i, inline_filep, compile_string, inlines)
+                    module_compile(i, inline_filep, compiler_string, inlines)
+                #execute this module, append output to response
                 args.insert(0, inline_module_extfilep)
-                response += exec_helper(args)
-
+                #print args
+                response += execute(args)
+            except OSError:
+                #assume the file does not exist, compile a new one
+                #compile this module, append output to response
+                module_compile(i, inline_filep, compiler_string, inlines)
+                args.insert(0, inline_module_extfilep)
+                #print args
+                response += execute(args)
     except:
         response += str("500: "+str(sys.exc_info()))
     return response
