@@ -1,6 +1,10 @@
-import subprocess, sys, os
+#/usr/bin/python
+import subprocess
+import sys
+import os
+import cgi
+import ssl
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-import SocketServer, cgi, ssl, time
 '''
 BASIC OPERATIONAL FUNCTIONS
 
@@ -11,15 +15,15 @@ def get_abs_path(local):
 '''
 Execute the program denoted by cmd[0], sending in cmd[1:] as args
 '''
-def execute(args):
+def execute(cmd_args):
     output = ""
     #Test starting the process
     try:
-        process = subprocess.Popen(args, stdout=subprocess.PIPE,
+        process = subprocess.Popen(cmd_args, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
     except OSError:
         #Return with failure (typically can't find file)
-        print args
+        print cmd_args
         return str("404: "+str(sys.exc_info()))
     #pipe the input in and return it to the caller
     for stdout in iter(process.stdout.readline, ""):
@@ -33,7 +37,7 @@ Read a text file line by line; returns those lines compounded into a string
 '''
 def read_text_file(path):
     response = ""
-    #try opening the file 
+    #try opening the file
     try:
         with open(path, 'r') as i:
             response += i.read()
@@ -57,7 +61,7 @@ MODULES_SUBDIRECTORY = "_modules/"
 '''
 COMPLEX SERVING FUNCTIONS
 
-Take a table of form data or other sort of dictionary and turn it into a 
+Take a table of form data or other sort of dictionary and turn it into a
 regular list to be passed as args
 '''
 def args_from_form(form):
@@ -95,17 +99,17 @@ def module_compile(module_count, inline_sourcep, compiler_string, inlines):
     src_ext = get_ext(compiler_string)
     #we will write to the following file to contain the source from the inlines
     inline_module_srcfilep = (inline_sourcep
-                                       +MODULES_SUBDIRECTORY
-                                       +str(module_count)+src_ext)
+                              +MODULES_SUBDIRECTORY
+                              +str(module_count)+src_ext)
     #we will pipe the following to the compiler string to see that the
     #output filepath equals this string
     inline_module_extfilep = (inline_sourcep
-                                       +MODULES_SUBDIRECTORY
-                                       +str(module_count)+MODULE_EXT)
+                              +MODULES_SUBDIRECTORY
+                              +str(module_count)+MODULE_EXT)
     compiler_string = compiler_string.replace(INPUT+src_ext,
                                               inline_module_srcfilep)
     compiler_string = compiler_string.replace(OUTPUT, inline_module_extfilep)
-    args = compiler_string.split(" ")
+    post_args = compiler_string.split(" ")
     #we gotta create the source for this module
     #this crashes if there isn't a modules directory to look into
     if not os.path.exists(subdirectory):
@@ -114,7 +118,7 @@ def module_compile(module_count, inline_sourcep, compiler_string, inlines):
         source.write(inlines)
     #now compile that file we just wrote using the source-defined compiler
     #string
-    return execute(args)
+    return execute(post_args)
 '''
 Generates a response from an inline file; this funcion will attempt the 
 following:
@@ -146,8 +150,8 @@ def serve_inline(inline_filep, args=[]):
                     module_count += 1
                     #which compiler string to use
                     compiler_string = get_compiler_string(this_line)
-            #don't take any lines with the damn inline flag in it 
-            if record and not INLINE_FLAG in this_line:
+            #don't take any lines with the damn inline flag in it
+            if record and INLINE_FLAG not in this_line:
                 inlines += this_line
         #TEST HERE FOR IF THE MODULE EXISTS AND HAS A COMPILE DATE OLDER
         #THAN THE SOURCE .inl FILE
@@ -155,9 +159,8 @@ def serve_inline(inline_filep, args=[]):
         for i in range(1, module_count+1):
             try:
                 inline_module_extfilep = (inline_filep
-                                       +MODULES_SUBDIRECTORY
-                                       +str(i)+MODULE_EXT)
-
+                                          +MODULES_SUBDIRECTORY
+                                          +str(i)+MODULE_EXT)
                 #record the time of this particular module file
                 inline_module_exec_time = os.stat(
                     inline_module_extfilep).st_mtime
@@ -171,17 +174,17 @@ def serve_inline(inline_filep, args=[]):
                 module_compile(i, inline_filep, compiler_string, inlines)
         module_index = 0
         for this_line in lines:
-            if this_line not in inlines and not INLINE_FLAG in this_line:
+            if this_line not in inlines and INLINE_FLAG not in this_line:
                 response += this_line
             elif module_index < module_count:
                 #composite args and then execute
                 temp_post = args
                 module_index += 1
                 inline_module_extfilep = (inline_filep
-                                       +MODULES_SUBDIRECTORY
-                                       +str(module_index)+MODULE_EXT)
+                                          +MODULES_SUBDIRECTORY
+                                          +str(module_index)+MODULE_EXT)
                 temp_post.insert(0, inline_module_extfilep)
-                response+=execute(temp_post)
+                response += execute(temp_post)
     except:
         response += str("500: "+str(sys.exc_info()))
     return response
@@ -205,7 +208,7 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
             self.wfile.write(read_text_file(INDEX))
         elif self.path.endswith(EXECUTABLE_EXT):
             #otherwise execute something if path ends with .out
-            self.wfile.write(exec_helper(hard_path))
+            self.wfile.write(execute(hard_path))
         elif self.path.endswith(INLINE_EXT):
             self.wfile.write(serve_inline(hard_path))
         else:
@@ -224,19 +227,19 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
         hard_path = get_abs_path(self.path[1:])
         #creat the POST form object
         form = cgi.FieldStorage(
-                fp=self.rfile, 
-                headers=self.headers,
-                environ={'REQUEST_METHOD':'POST',
-                         'CONTENT_TYPE':self.headers['Content-Type'],
-                }
-            )
+            fp=self.rfile,
+            headers=self.headers,
+            environ={'REQUEST_METHOD':'POST',
+                     'CONTENT_TYPE':self.headers['Content-Type'],
+            }
+        )
         #cast those arguments into a list
         arguments = args_from_form(form)
         if self.path.endswith(EXECUTABLE_EXT):
             #otherwise execute something if path ends with .out
             arguments.insert(0, hard_path)
             self.wfile.write(exec_helper(arguments))
-        #take the inline route and send in the POST data along with it 
+        #take the inline route and send in the POST data along with it
         elif self.path.endswith(INLINE_EXT):
             self.wfile.write(serve_inline(hard_path, args=arguments))
 def run(server_class=HTTPServer, handler_class=SpecialPreprocessor, port=80):
@@ -247,11 +250,10 @@ def run(server_class=HTTPServer, handler_class=SpecialPreprocessor, port=80):
 def run_ssl(server_class=HTTPServer, handler_class=SpecialPreprocessor,
             port=443, certificate=''):
     httpd = server_class(('', port), handler_class)
-    httpd.socket = ssl.wrap_socket(httpd.socket, certfile=CERTIFICATE,
-                                    server_side=True)
+    httpd.socket = ssl.wrap_socket(httpd.socket, certfile=certificate,
+                                   server_side=True)
     print 'Starting httpd...'
     httpd.serve_forever()
-    
 if __name__ == "__main__":
     import argparse
     CERTIFICATE_P = "path/to/crt"
