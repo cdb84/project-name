@@ -55,7 +55,10 @@ int main(){
 $$> and it works inline!!!</p>
 </html>
 ```
-
+INPUT should specify where in your compiler statement the input goes, 
+and OUTPUT should specify the output argument positioning.
+This is done so that when the webserver live-compiles, it knows what
+files and paths to send into the compile statement.
 ## TODO
 
 - [ ] Implement HTTPS in practice (it is there in theory currently)
