@@ -91,8 +91,6 @@ def get_ext(compiler_string):
     return ""
 def module_compile(module_count, inline_sourcep, compiler_string, inlines):
     subdirectory = inline_sourcep+MODULES_SUBDIRECTORY
-    #print "In module compile, ", module_count, inline_sourcep, compiler_string
-    #print inlines
     src_ext = get_ext(compiler_string)
     #we will write to the following file to contain the source from the inlines
     inline_module_srcfilep = (inline_sourcep
@@ -115,7 +113,6 @@ def module_compile(module_count, inline_sourcep, compiler_string, inlines):
         source.write(inlines)
     #now compile that file we just wrote using the source-defined compiler
     #string
-    #print args
     return execute(args)
 '''
 Generates a response from an inline file; this funcion will attempt the 
@@ -138,17 +135,14 @@ def serve_inline(inline_filep, args=[]):
         with open(inline_filep, 'r') as i:
             lines = i.readlines()
         for this_line in lines:
-            #print this_line
             #this is going to be the hardest part
             if INLINE_FLAG in this_line:
-                #print "Found an inline flag in ", inline_filep
                 #switch record flag
                 record = not record
                 #if record has just recently been switched to true, record:
                 if record:
                     #which module this is
                     module_count += 1
-                    #print "Module count now equals ", module_count
                     #which compiler string to use
                     compiler_string = get_compiler_string(this_line)
             #don't take any lines with the damn inline flag in it 
@@ -157,9 +151,7 @@ def serve_inline(inline_filep, args=[]):
         #TEST HERE FOR IF THE MODULE EXISTS AND HAS A COMPILE DATE OLDER
         #THAN THE SOURCE .inl FILE
         inline_file_time = os.stat(inline_filep).st_mtime
-        #print module_count
         for i in range(1, module_count+1):
-            #print "module ", i
             try:
                 inline_module_extfilep = (inline_filep
                                        +MODULES_SUBDIRECTORY
@@ -173,14 +165,12 @@ def serve_inline(inline_filep, args=[]):
                     module_compile(i, inline_filep, compiler_string, inlines)
                 #execute this module, append output to response
                 args.insert(0, inline_module_extfilep)
-                #print args
                 response += execute(args)
             except OSError:
                 #assume the file does not exist, compile a new one
                 #compile this module, append output to response
                 module_compile(i, inline_filep, compiler_string, inlines)
                 args.insert(0, inline_module_extfilep)
-                #print args
                 response += execute(args)
     except:
         response += str("500: "+str(sys.exc_info()))
@@ -232,13 +222,13 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
             )
         #cast those arguments into a list
         arguments = args_from_form(form)
-        #insert the executable at the top of the list
-        arguments.insert(0, hard_path)
-        #execute the entire list of arguments
-        #this is where the security vulnerabillity is most promoinent
-        #as by altering the form/POST data, one could arguably execute
-        #any arbitrary program that the webserver itself could execute
-        self.wfile.write(exec_helper(arguments))
+        if self.path.endswith(EXECUTABLE_EXT):
+            #otherwise execute something if path ends with .out
+            arguments.insert(0, hard_path)
+            self.wfile.write(exec_helper(arguments))
+        #take the inline route and send in the POST data along with it 
+        elif self.path.endswith(INLINE_EXT):
+            self.wfile.write(serve_inline(hard_path, args=arguments))
 def run(server_class=HTTPServer, handler_class=SpecialPreprocessor, port=80):
     httpd = server_class(('', port), handler_class)
     print 'Starting httpd...'
