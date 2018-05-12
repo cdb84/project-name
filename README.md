@@ -34,6 +34,26 @@ safely.)
 Simply navigate to the webserver's address, and enter the URL of an executable. 
 That's all!
 
+### Example files
+In the master branch, there exists a few files:
+
+- exec.c and exec.out, which can be called to as an individual executable that
+the server can run as a pre-process
+- index.html, the index of this webroot. Nothing really special here.
+- test.inl, an inline file that you can *write C code in to have preprocessed*:
+`<html>
+<head>
+</head>
+<p>This is normal html, and sent to the client as such. However, you can do
+$$'gcc INPUT.c /home/connor/git/lawless-webserver/libheathen.c -o OUTPUT'>
+#include <stdio.h>
+
+int main(){
+  puts("The following!");
+}
+$$> and it works inline!!!</p>
+</html>`
+
 ## TODO
 
 - [ ] Implement HTTPS in practice (it is there in theory currently)
