@@ -41,7 +41,8 @@ In the master branch, there exists a few files:
 the server can run as a pre-process
 - index.html, the index of this webroot. Nothing really special here.
 - test.inl, an inline file that you can *write C code in to have preprocessed*:
-`<html>
+```
+<html>
 <head>
 </head>
 <p>This is normal html, and sent to the client as such. However, you can do
@@ -52,8 +53,12 @@ int main(){
   puts("The following!");
 }
 $$> and it works inline!!!</p>
-</html>`
-
+</html>
+```
+INPUT should specify where in your compiler statement the input file-path
+goes, and OUTPUT should specify the output argument positioning.
+This is done so that when the webserver live-compiles, it knows what
+files and paths to send into the compile statement.
 ## TODO
 
 - [ ] Implement HTTPS in practice (it is there in theory currently)
