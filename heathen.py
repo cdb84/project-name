@@ -23,7 +23,7 @@ def execute(cmd_args):
                                    stderr=subprocess.PIPE)
     except OSError:
         #Return with failure (typically can't find file)
-        print cmd_args
+        #print cmd_args
         return str("404: "+str(sys.exc_info()))
     #pipe the input in and return it to the caller
     for stdout in iter(process.stdout.readline, ""):
@@ -94,18 +94,27 @@ def get_ext(compiler_string):
         if INPUT in item:
             return item.replace(INPUT, "")
     return ""
-def module_compile(module_count, inline_sourcep, compiler_string, inlines):
+def module_compile(module_no, inline_sourcep, inlines_struct):
+    compiler_string = ""
+    inlines = ""
+    #extrapolate data from the truple
+    for i in inlines_struct:
+        #print i
+        if i[0] == module_no:
+            compiler_string = i[1]
+            inlines += i[2]
+            #print i[0], i[1], i[2]
     subdirectory = inline_sourcep+MODULES_SUBDIRECTORY
     src_ext = get_ext(compiler_string)
     #we will write to the following file to contain the source from the inlines
     inline_module_srcfilep = (inline_sourcep
                               +MODULES_SUBDIRECTORY
-                              +str(module_count)+src_ext)
+                              +str(module_no)+src_ext)
     #we will pipe the following to the compiler string to see that the
     #output filepath equals this string
     inline_module_extfilep = (inline_sourcep
                               +MODULES_SUBDIRECTORY
-                              +str(module_count)+MODULE_EXT)
+                              +str(module_no)+MODULE_EXT)
     compiler_string = compiler_string.replace(INPUT+src_ext,
                                               inline_module_srcfilep)
     compiler_string = compiler_string.replace(OUTPUT, inline_module_extfilep)
@@ -119,6 +128,11 @@ def module_compile(module_count, inline_sourcep, compiler_string, inlines):
     #now compile that file we just wrote using the source-defined compiler
     #string
     return execute(post_args)
+def present_in(needle, trup_haystack):
+    for i in trup_haystack:
+        if i[2] is needle:
+            return True
+    return False
 '''
 Generates a response from an inline file; this funcion will attempt the 
 following:
@@ -132,8 +146,11 @@ def serve_inline(inline_filep, args=[]):
     response = ""
     #try/except in case this file does not exist, etcetera
     try:
-        compiler_string = inlines = ""
+        compiler_string = ""
+        inlines = []
         record = False
+        #we will go against better convention here and say that our module
+        #list starts at one (I am so sorry)
         module_count = inline_file_time = 0
         #we're gonna scan through the file and take it line by line to
         #determine where the inline portion is, and how it is compiled.
@@ -152,32 +169,48 @@ def serve_inline(inline_filep, args=[]):
                     compiler_string = get_compiler_string(this_line)
             #don't take any lines with the damn inline flag in it
             if record and INLINE_FLAG not in this_line:
-                inlines += this_line
-        #TEST HERE FOR IF THE MODULE EXISTS AND HAS A COMPILE DATE OLDER
-        #THAN THE SOURCE .inl FILE
+                #inline record for module module_count; truples oh boy
+                inlines.append((module_count, compiler_string, this_line))
+        #for efficiency's sake, we should compare times of compilation to
+        #see if we can save a step
         inline_file_time = os.stat(inline_filep).st_mtime
+        #iterative loop for every module
         for i in range(1, module_count+1):
             try:
+                #create the module filename
                 inline_module_extfilep = (inline_filep
                                           +MODULES_SUBDIRECTORY
                                           +str(i)+MODULE_EXT)
-                #record the time of this particular module file
+                #record the time of this particular module executable
                 inline_module_exec_time = os.stat(
                     inline_module_extfilep).st_mtime
                 #compare it to the original inline source file
                 if inline_file_time > inline_module_exec_time:
                     #recompile this module
-                    module_compile(i, inline_filep, compiler_string, inlines)
+                    #printing sends errors to console
+                    print module_compile(i, inline_filep, inlines)
             except OSError:
                 #assume the file does not exist, compile a new one
                 #compile this module, append output to response
-                module_compile(i, inline_filep, compiler_string, inlines)
+                #printing sends errors to console
+                print module_compile(i, inline_filep, inlines)
+        #keep track of which module we're on
         module_index = 0
+        #which inline of the actual html file are we serving
+        lindex_inline = 0
         for this_line in lines:
-            if this_line not in inlines and INLINE_FLAG not in this_line:
+            #serving a regular line of html/text
+            if (not present_in(this_line, inlines)
+                and INLINE_FLAG not in this_line):
                 response += this_line
-            elif module_index < module_count:
-                #composite args and then execute
+                #reset the inline line index
+                if lindex_inline > 0:
+                    lindex_inline = 0
+            #we have to serve the executable's output
+            elif lindex_inline == 0:
+                #increment this so that we don't keep serving the same
+                #executable for every line of inline code
+                lindex_inline += 1
                 temp_post = args
                 module_index += 1
                 inline_module_extfilep = (inline_filep
