@@ -201,7 +201,7 @@ def serve_inline(inline_filep, args=[]):
         for this_line in lines:
             #serving a regular line of html/text
             if (not present_in(this_line, inlines)
-                and INLINE_FLAG not in this_line):
+                    and INLINE_FLAG not in this_line):
                 response += this_line
                 #reset the inline line index
                 if lindex_inline > 0:
@@ -264,7 +264,7 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
             headers=self.headers,
             environ={'REQUEST_METHOD':'POST',
                      'CONTENT_TYPE':self.headers['Content-Type'],
-            }
+                    }
         )
         #cast those arguments into a list
         arguments = args_from_form(form)
@@ -304,4 +304,3 @@ if __name__ == "__main__":
         run(port=args.port)
     else:
         run()
-
