@@ -271,7 +271,7 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
         if self.path.endswith(EXECUTABLE_EXT):
             #otherwise execute something if path ends with .out
             arguments.insert(0, hard_path)
-            self.wfile.write(exec_helper(arguments))
+            self.wfile.write(execute(arguments))
         #take the inline route and send in the POST data along with it
         elif self.path.endswith(INLINE_EXT):
             self.wfile.write(serve_inline(hard_path, args=arguments))
