@@ -7,17 +7,18 @@ import ssl
 import threading
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from SocketServer import ThreadingMixIn
-'''
+"""
 BASIC OPERATIONAL FUNCTIONS
-
-Given a relative path, return the absolute path.
-'''
+"""
 def get_abs_path(local):
+    """
+    Given a relative path, return the absolute path.
+    """
     return os.path.realpath(local)
-'''
-Execute the program denoted by cmd[0], sending in cmd[1:] as args
-'''
 def execute(cmd_args):
+    """
+    Execute the program denoted by cmd[0], sending in cmd[1:] as args
+    """
     output = ""
     #Test starting the process
     try:
@@ -34,10 +35,10 @@ def execute(cmd_args):
         output += stderr
     process.wait()
     return output
-'''
-Read a text file line by line; returns those lines compounded into a string
-'''
 def read_text_file(path):
+    """
+    Read a text file line by line; returns those lines compounded into a string
+    """
     response = ""
     #Try opening the file
     try:
@@ -48,10 +49,10 @@ def read_text_file(path):
         response = str("500: "+str(sys.exc_info()))
     #Return that compounded string from the file.
     return response
-'''
-Returns true if needle exists in the 'index' position of the truple haystack
-'''
 def present_in(needle, trup_haystack, index):
+    """
+    Returns true if needle exists in the 'index' position of the truple haystack
+    """
     for i in trup_haystack:
         if i[index] is needle:
             return True
@@ -67,23 +68,24 @@ OUTPUT = "OUTPUT"
 COMPILER_STRING_SIG = "'"
 #So when looking for modules, it is hard_path+MODULES_SUBDIRECTORY
 MODULES_SUBDIRECTORY = "_modules/"
-'''
+"""
 COMPLEX SERVING FUNCTIONS
-
-Take a table of form data or other sort of dictionary and turn it into a
-regular 1D list to be passed as args
-'''
-def args_from_form(form):
+"""
+def post_args_from_form(form):
+    """
+    Take a table of form data or other sort of dictionary and turn it into a
+    regular 1D list to be passed as args
+    """
     res = list()
     for item in form:
         res.append(item)
         res.append(form[item].value)
     return res
-'''
-Scans a string to see if it can determine a compiler directive based on pre-
-defined signage 
-'''
 def get_compiler_string(line):
+    """
+    Scans a string to see if it can determine a compiler directive based on pre-
+    defined signage
+    """
     result = ""
     record = False
     #Examine every character in the line
@@ -98,27 +100,26 @@ def get_compiler_string(line):
         if record and character is not COMPILER_STRING_SIG:
             result += character
     return result
-'''
-Strip INPUT off the compiler string and see which file extension follows the 
-INPUT flag; returns that. E.g. 'gcc INPUT.c' -> '.c'
-'''
 def get_ext(compiler_string):
+    """
+    Strip INPUT off the compiler string and see which file extension follows the
+    INPUT flag; returns that. E.g. 'gcc INPUT.c' -> '.c'
+    """
     psplit = compiler_string.split(" ")
     for item in psplit:
         if INPUT in item:
             return item.replace(INPUT, "")
     return ""
-'''
-Compile a module of an inline webpage. 
-module_no = which module this is in the webpage. This index starts at 1,
-unfortunately.
-inline_sourcep = the path to the inline file
-inlines_struct = a truple structure containing the following:
-  (module_index, compiler_string, actual line of code)
-'''
 def module_compile(module_no, inline_sourcep, inlines_struct):
-    compiler_string = ""
-    inlines = ""
+    """
+    Compile a module of an inline webpage.
+    module_no = which module this is in the webpage. This index starts at 1,
+    unfortunately.
+    inline_sourcep = the path to the inline file
+    inlines_struct = a truple structure containing the following:
+      (module_index, compiler_string, actual line of code)
+    """
+    compiler_string = inlines = ""
     #Extrapolate data from the truple
     for i in inlines_struct:
         if i[0] == module_no:
@@ -148,16 +149,16 @@ def module_compile(module_no, inline_sourcep, inlines_struct):
     #Now compile that file we just wrote using the source-defined compiler
     #string
     return execute(post_args)
-'''
-Generates a response from an inline file; this funcion will attempt the 
-following:
-  A) to execute the modules specified by the inline file
-  B) to compile new modules if it is determined that the modules for this 
-  inline file are too old
-  C) to compile new modules if they don't exist
-  D) to run these newly compiled modules
-'''
-def serve_inline(inline_filep, args=[]):
+def serve_inline(inline_filep, post=[]):
+    """
+    Generates a response from an inline file; this funcion will attempt the
+    following:
+      A) to execute the modules specified by the inline file
+      B) to compile new modules if it is determined that the modules for this
+      inline file are too old
+      C) to compile new modules if they don't exist
+      D) to run these newly compiled modules
+    """
     response = ""
     #Try/except in case this file does not exist, etcetera
     try:
@@ -225,7 +226,7 @@ def serve_inline(inline_filep, args=[]):
                 #Increment this so that we don't keep serving the same
                 #executable for every line of inline code
                 lindex_inline += 1
-                temp_post = args
+                temp_post = post
                 module_index += 1
                 inline_module_extfilep = (inline_filep
                                           +MODULES_SUBDIRECTORY
@@ -235,18 +236,27 @@ def serve_inline(inline_filep, args=[]):
     except:
         response += str("500: "+str(sys.exc_info()))
     return response
-'''
-Our tailored request handler. GET behaves fairly expectedly, however POST
-is sorta hacky. Most of these methods have the pretense of executing other
-programs written in other languages in the same webroot directory as the server.
-'''
 class SpecialPreprocessor(BaseHTTPRequestHandler):
+    """
+    Our tailored request handler. GET behaves fairly expectedly, however POST
+    is sorta hacky. Most of these methods have the pretense of executing other
+    programs written in other languages in the same webroot directory as the server.
+    """
     def _set_headers(self):
+        """
+        Run of the mill headers, they get sent for every request. Always 200,
+        'text/html' mimetype. This function will be changed later to serve
+        different mimetypes.
+        """
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
     def do_GET(self):
+        """
+        This GET method compares the extension of the request path, to see if it
+        refers to a file that implies preprocessing/executables.
+        """
         self._set_headers()
         #Need to use absolute paths for some odd reason
         hard_path = get_abs_path(self.path[1:])
@@ -263,12 +273,17 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
             #TODO: make this work for more than just text/html
             self.wfile.write(read_text_file(hard_path))
     def do_HEAD(self):
+        """
+        Set the headers. This one will be where we change the mimetypes, via
+        checking the path and then sending the extension as an argument to
+        set_headers()
+        """
         self._set_headers()
-
-    #NOTE: POSTing to inlines requires the execution string to the particular
-    #module to always carry the POST arguments. We will have to have checks in
-    #place for the various filetypes
     def do_POST(self):
+        """
+        POST requests are handled differently than GET. POST will pipe the
+        POST form into the compiled executable as a 1 dimmensional array.
+        """
         self._set_headers()
         #Take hard path again because *NIX trivialities
         hard_path = get_abs_path(self.path[1:])
@@ -276,52 +291,60 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
         form = cgi.FieldStorage(fp=self.rfile,
                                 headers=self.headers,
                                 environ={
-                                'REQUEST_METHOD':'POST',
-                                'CONTENT_TYPE':self.headers['Content-Type'],
+                                    'REQUEST_METHOD':'POST',
+                                    'CONTENT_TYPE':self.headers['Content-Type'],
                                 }
                                )
         #Cast those arguments into a list
-        arguments = args_from_form(form)
+        arguments = post_args_from_form(form)
         if self.path.endswith(EXECUTABLE_EXT):
             #Otherwise execute something if path ends with .out
             arguments.insert(0, hard_path)
             self.wfile.write(execute(arguments))
         #Take the inline route and send in the POST data along with it
         elif self.path.endswith(INLINE_EXT):
-            self.wfile.write(serve_inline(hard_path, args=arguments))
-'''
-A class to handle threading. Very hands-off, apparently.
-'''
+            self.wfile.write(serve_inline(hard_path, post=arguments))
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
-    #And apparently that's all
-    
+    """
+    A class to handle threading. Very hands-off, apparently.
+    """
+
 def run(server_class=ThreadedHTTPServer, handler_class=SpecialPreprocessor,
         port=80):
+    """
+    Run an instance of the webserver with unsecured HTTP.
+    """
     httpd = server_class(('', port), handler_class)
     print 'Starting httpd...'
     httpd.serve_forever()
+
 CERTIFICATE_P = "server.crt"
 def run_ssl(server_class=ThreadedHTTPServer, handler_class=SpecialPreprocessor,
             port=443, certificate=CERTIFICATE_P):
+    """
+    Run an instance of the webserver with socketed HTTPS.
+    """
     httpd = server_class(('', port), handler_class)
     httpd.socket = ssl.wrap_socket(httpd.socket, certfile=certificate,
                                    server_side=True)
     print 'Starting httpd...'
     httpd.serve_forever()
+
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Heathen Webserver: a"+
-                                     " ridiculously dangerous webserver that"+
-                                     " allows preprocessing to any executable")
-    parser.add_argument("-port", help="The port to bind to.", type=int)
-    parser.add_argument("-ssl", help="Use SSL/HTTPS; specify the certificate.", 
-                        type=int)
-    args = parser.parse_args()
-    if args.port and args.ssl:
-        run_ssl(port=args.port, certificate=args.ssl)
-    elif args.ssl:
-        run_ssl(certificate=args.ssl)
-    elif args.port:
-        run(port=args.port)
+    clparser = argparse.ArgumentParser(description="Heathen Webserver: a"+
+                                       " ridiculously dangerous webserver that"+
+                                       " allows preprocessing to any executable")
+    clparser.add_argument("-port", help="The port to bind to.", type=int)
+    clparser.add_argument("-ssl",
+                          help="Use SSL/HTTPS; specify the certificate.",
+                          type=int)
+    sysargs = clparser.parse_args()
+    if sysargs.port and sysargs.ssl:
+        run_ssl(port=sysargs.port, certificate=sysargs.ssl)
+    elif sysargs.ssl:
+        run_ssl(certificate=sysargs.ssl)
+    elif sysargs.port:
+        run(port=sysargs.port)
     else:
         run()
