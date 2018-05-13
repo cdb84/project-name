@@ -6,6 +6,6 @@ int main(){
   for ( int i = 0; i < 100; i++){
     printf("%d \n", i);
   }
-  sleep(60);
+  //sleep(60); this is here as a test of the multithreading
 }
 

@@ -48,7 +48,14 @@ def read_text_file(path):
         response = str("500: "+str(sys.exc_info()))
     #return that string
     return response
-
+'''
+Returns true if needle exists in the 'index' position of the truple haystack
+'''
+def present_in(needle, trup_haystack, index):
+    for i in trup_haystack:
+        if i[index] is needle:
+            return True
+    return False
 
 INDEX = "index.html"
 EXECUTABLE_EXT = ".out"
@@ -90,12 +97,24 @@ def get_compiler_string(line):
         if record and character is not COMPILER_STRING_SIG:
             result += character
     return result
+'''
+Strip INPUT off the compiler string and see which file extension follows the 
+INPUT flag; returns that. E.g. 'gcc INPUT.c' -> '.c'
+'''
 def get_ext(compiler_string):
     psplit = compiler_string.split(" ")
     for item in psplit:
         if INPUT in item:
             return item.replace(INPUT, "")
     return ""
+'''
+Compile a module of an inline webpage. 
+module_no = which module this is in the webpage. This index starts at 1,
+unfortunately.
+inline_sourcep = the path to the inline file
+inlines_struct = a truple structure containing the following:
+  (module_index, compiler_string, actual line of code)
+'''
 def module_compile(module_no, inline_sourcep, inlines_struct):
     compiler_string = ""
     inlines = ""
@@ -130,11 +149,6 @@ def module_compile(module_no, inline_sourcep, inlines_struct):
     #now compile that file we just wrote using the source-defined compiler
     #string
     return execute(post_args)
-def present_in(needle, trup_haystack):
-    for i in trup_haystack:
-        if i[2] is needle:
-            return True
-    return False
 '''
 Generates a response from an inline file; this funcion will attempt the 
 following:
@@ -202,7 +216,7 @@ def serve_inline(inline_filep, args=[]):
         lindex_inline = 0
         for this_line in lines:
             #serving a regular line of html/text
-            if (not present_in(this_line, inlines)
+            if (not present_in(this_line, inlines, 2)
                     and INLINE_FLAG not in this_line):
                 response += this_line
                 #reset the inline line index
@@ -288,7 +302,7 @@ def run(server_class=ThreadedHTTPServer, handler_class=SpecialPreprocessor,
     httpd = server_class(('', port), handler_class)
     print 'Starting httpd...'
     httpd.serve_forever()
-CERTIFICATE_P = "path/to/crt"
+CERTIFICATE_P = "server.crt"
 def run_ssl(server_class=ThreadedHTTPServer, handler_class=SpecialPreprocessor,
             port=443, certificate=CERTIFICATE_P):
     httpd = server_class(('', port), handler_class)
@@ -302,13 +316,12 @@ if __name__ == "__main__":
                                      " ridiculously dangerous webserver that"+
                                      " allows preprocessing to any executable")
     parser.add_argument("port", help="The port to bind to.", type=int)
-    parser.add_argument("-ssl", help="Use SSL/HTTPS.", action="store_true")
+    parser.add_argument("-ssl", help="Use SSL/HTTPS; specify the certificate.", 
+                        type=int)
     args = parser.parse_args()
     if args.port and args.ssl:
-        run_ssl(port=args.port, certificate=CERTIFICATE_P)
+        run_ssl(port=args.port, certificate=args.ssl)
     elif args.ssl:
-        run_ssl()
-    elif args.port:
-        run(port=args.port)
+        run_ssl(certificate=args.ssl)
     else:
-        run()
+        run(port=args.port)
