@@ -50,7 +50,7 @@ def read_text_file(path):
 
 INDEX = "index.html"
 EXECUTABLE_EXT = ".out"
-INLINE_EXT = ".inl"
+INLINE_EXT = ".hea"
 MODULE_EXT = ".mod"
 INLINE_FLAG = "$$"
 INPUT = "INPUT"

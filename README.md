@@ -40,7 +40,8 @@ In the master branch, there exists a few files:
 - exec.c and exec.out, which can be called to as an individual executable that
 the server can run as a pre-process
 - index.html, the index of this webroot. Nothing really special here.
-- test.inl, an inline file that you can *write C code in to have preprocessed*:
+- test.hea, an inline 'heathen' file that you can *write C code in to
+have preprocessed*:
 ```
 <html>
 <head>
@@ -52,13 +53,16 @@ $$'gcc INPUT.c /home/connor/git/lawless-webserver/libheathen.c -o OUTPUT'>
 int main(){
   puts("The following!");
 }
-$$> and it works inline!!!</p>
+$$>
+and it works inline!!!</p>
 </html>
 ```
 INPUT should specify where in your compiler statement the input file-path
 goes, and OUTPUT should specify the output argument positioning.
 This is done so that when the webserver live-compiles, it knows what
-files and paths to send into the compile statement.
+files and paths to send into the compile statement. The opening and closing
+inline flags must be on separate lines from the rest of the HTML body (for
+now).
 ## TODO
 
 - [ ] Implement HTTPS in practice (it is there in theory currently)
