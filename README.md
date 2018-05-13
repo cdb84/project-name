@@ -2,10 +2,15 @@
 A webserver I shouldn't have made but still did. On the plus side,
 you can do webpage preprocessing in C now.
 ## This Is Terrifying
-I know everyone hates on PHP, but I miss it ever so slighty now having
-preprocessed in C. Anyway, this repository is more "should vs. could" than
-anything, as in yes, we *could* do something so dastardly, but we really
-shouldn'tve.
+You probably shouldn't do this sorta thing, and it doesn't make sense. I 
+sorta just did it for the hell of it. Maybe someday I'll find a reason to 
+use a systems-side language over:
+- PHP
+- Node.js
+- Flask
+- Literally anything else
+
+But for now, Frankenstein project.
 
 ## How It Works
 ### GET
