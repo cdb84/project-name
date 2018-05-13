@@ -76,4 +76,4 @@ now).
 - [ ] Allow more than just 'text/html' mimetypes
 - [X] Do multithreading so that the entire server doesn't get held up if 
   there's one long request
-~- [ ] Migrate the entire webserver over to C~
+- [ ] ~Migrate the entire webserver over to C~
