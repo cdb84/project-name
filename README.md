@@ -74,6 +74,6 @@ now).
 - [ ] Implement HTTPS in practice (it is there in theory currently)
 - [ ] Allow the uploading of files to the webserver
 - [ ] Allow more than just 'text/html' mimetypes
-- [ ] Do multithreading so that the entire server doesn't get held up if 
+- [X] Do multithreading so that the entire server doesn't get held up if 
   there's one long request
-- [ ] Migrate the entire webserver over to C
+~- [ ] Migrate the entire webserver over to C~

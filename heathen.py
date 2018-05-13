@@ -4,7 +4,9 @@ import sys
 import os
 import cgi
 import ssl
+import threading
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from SocketServer import ThreadingMixIn
 '''
 BASIC OPERATIONAL FUNCTIONS
 
@@ -275,13 +277,20 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
         #take the inline route and send in the POST data along with it
         elif self.path.endswith(INLINE_EXT):
             self.wfile.write(serve_inline(hard_path, args=arguments))
-def run(server_class=HTTPServer, handler_class=SpecialPreprocessor, port=80):
+'''
+A class to handle threading. Very hands-off, apparently.
+'''
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    '''And apparently that's all'''
+    
+def run(server_class=ThreadedHTTPServer, handler_class=SpecialPreprocessor,
+        port=80):
     httpd = server_class(('', port), handler_class)
     print 'Starting httpd...'
     httpd.serve_forever()
-
-def run_ssl(server_class=HTTPServer, handler_class=SpecialPreprocessor,
-            port=443, certificate=''):
+CERTIFICATE_P = "path/to/crt"
+def run_ssl(server_class=ThreadedHTTPServer, handler_class=SpecialPreprocessor,
+            port=443, certificate=CERTIFICATE_P):
     httpd = server_class(('', port), handler_class)
     httpd.socket = ssl.wrap_socket(httpd.socket, certfile=certificate,
                                    server_side=True)
@@ -289,7 +298,6 @@ def run_ssl(server_class=HTTPServer, handler_class=SpecialPreprocessor,
     httpd.serve_forever()
 if __name__ == "__main__":
     import argparse
-    CERTIFICATE_P = "path/to/crt"
     parser = argparse.ArgumentParser(description="Heathen Webserver: a"+
                                      " ridiculously dangerous webserver that"+
                                      " allows preprocessing to any executable")

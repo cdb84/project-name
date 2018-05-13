@@ -21,13 +21,14 @@ $$>
 times as you wish,
 $$'gcc INPUT.c /home/connor/git/lawless-webserver/libheathen.c -o OUTPUT'>
 #include <stdio.h>
+#include <unistd.h>
 
 int main(){
   puts(" it should always work.");
   for ( int i = 0; i < 100; i++){
     printf("%d \n", i);
   }
- 
+  //sleep(60); this is here as a test of the multithreading
 }
 
 <$$
