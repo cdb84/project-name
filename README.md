@@ -52,7 +52,7 @@ have preprocessed*:
 <head>
 </head>
 <p>This is normal html, and sent to the client as such. However, you can do
-$$'gcc INPUT.c /home/connor/git/lawless-webserver/libheathen.c -o OUTPUT'>
+$$'gcc INPUT.c -o OUTPUT'>
 #include <stdio.h>
 
 int main(){
