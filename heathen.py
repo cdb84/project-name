@@ -25,11 +25,11 @@ def execute(cmd_args):
                                    stderr=subprocess.PIPE)
     except OSError:
         #Return with failure (typically can't find file)
-        #print cmd_args
         return str("404: "+str(sys.exc_info()))
-    #pipe the input in and return it to the caller
+    #Pipe the output and return it to the caller
     for stdout in iter(process.stdout.readline, ""):
         output += stdout
+    #Arguable risk in piping out stderr as well and returning it to the client
     for stderr in iter(process.stderr.readline, ""):
         output += stderr
     process.wait()
@@ -39,14 +39,14 @@ Read a text file line by line; returns those lines compounded into a string
 '''
 def read_text_file(path):
     response = ""
-    #try opening the file
+    #Try opening the file
     try:
         with open(path, 'r') as i:
             response += i.read()
     except:
-        #return the exception
+        #Return the exception
         response = str("500: "+str(sys.exc_info()))
-    #return that string
+    #Return that compounded string from the file.
     return response
 '''
 Returns true if needle exists in the 'index' position of the truple haystack
@@ -65,13 +65,13 @@ INLINE_FLAG = "$$"
 INPUT = "INPUT"
 OUTPUT = "OUTPUT"
 COMPILER_STRING_SIG = "'"
-#so when looking for modules, it is hard_path+MODULES_SUBDIRECTORY
+#So when looking for modules, it is hard_path+MODULES_SUBDIRECTORY
 MODULES_SUBDIRECTORY = "_modules/"
 '''
 COMPLEX SERVING FUNCTIONS
 
 Take a table of form data or other sort of dictionary and turn it into a
-regular list to be passed as args
+regular 1D list to be passed as args
 '''
 def args_from_form(form):
     res = list()
@@ -86,14 +86,15 @@ defined signage
 def get_compiler_string(line):
     result = ""
     record = False
-    #examine every character in the line
+    #Examine every character in the line
     for character in line:
-        #if the current character flags a compiler direction
+        #If the current character flags a compiler direction
         if character is COMPILER_STRING_SIG:
-            #record will equal it's contra--if we just found this, we start
-            #recording. If we already found this before, it will stop recording
+            #Record will equal it's contra--if we just found this, we start
+            #recording. If we already were recording, it will stop recording
             record = not record
-        #and thus, our condition to record these characters as compiler string
+        #And thus, our condition to record these characters as compiler string
+        #Don't want to take the compiler sign with us
         if record and character is not COMPILER_STRING_SIG:
             result += character
     return result
@@ -118,20 +119,18 @@ inlines_struct = a truple structure containing the following:
 def module_compile(module_no, inline_sourcep, inlines_struct):
     compiler_string = ""
     inlines = ""
-    #extrapolate data from the truple
+    #Extrapolate data from the truple
     for i in inlines_struct:
-        #print i
         if i[0] == module_no:
             compiler_string = i[1]
             inlines += i[2]
-            #print i[0], i[1], i[2]
     subdirectory = inline_sourcep+MODULES_SUBDIRECTORY
     src_ext = get_ext(compiler_string)
-    #we will write to the following file to contain the source from the inlines
+    #We will write to the following file to contain the source from the inlines
     inline_module_srcfilep = (inline_sourcep
                               +MODULES_SUBDIRECTORY
                               +str(module_no)+src_ext)
-    #we will pipe the following to the compiler string to see that the
+    #We will pipe the following to the compiler string to see that the
     #output filepath equals this string
     inline_module_extfilep = (inline_sourcep
                               +MODULES_SUBDIRECTORY
@@ -140,13 +139,13 @@ def module_compile(module_no, inline_sourcep, inlines_struct):
                                               inline_module_srcfilep)
     compiler_string = compiler_string.replace(OUTPUT, inline_module_extfilep)
     post_args = compiler_string.split(" ")
-    #we gotta create the source for this module
-    #this crashes if there isn't a modules directory to look into
+    #We must create the source for this module
+    #This crashes if there isn't a modules directory to look into
     if not os.path.exists(subdirectory):
         os.makedirs(subdirectory)
     with open(inline_module_srcfilep, 'w') as source:
         source.write(inlines)
-    #now compile that file we just wrote using the source-defined compiler
+    #Now compile that file we just wrote using the source-defined compiler
     #string
     return execute(post_args)
 '''
@@ -160,71 +159,70 @@ following:
 '''
 def serve_inline(inline_filep, args=[]):
     response = ""
-    #try/except in case this file does not exist, etcetera
+    #Try/except in case this file does not exist, etcetera
     try:
         compiler_string = ""
         inlines = []
         record = False
-        #we will go against better convention here and say that our module
+        #We will go against better convention here and say that our module
         #list starts at one (I am so sorry)
         module_count = inline_file_time = 0
-        #we're gonna scan through the file and take it line by line to
+        #We're gonna scan through the file and take it line by line to
         #determine where the inline portion is, and how it is compiled.
         with open(inline_filep, 'r') as i:
             lines = i.readlines()
         for this_line in lines:
-            #this is going to be the hardest part
+            #This is going to be the hardest part
             if INLINE_FLAG in this_line:
-                #switch record flag
+                #Switch record flag
                 record = not record
-                #if record has just recently been switched to true, record:
+                #If record has just recently been switched to true, record:
                 if record:
-                    #which module this is
+                    #Which module this is
                     module_count += 1
-                    #which compiler string to use
+                    #Which compiler string to use
                     compiler_string = get_compiler_string(this_line)
-            #don't take any lines with the damn inline flag in it
+            #Don't take any lines with the damn inline flag in it
             if record and INLINE_FLAG not in this_line:
-                #inline record for module module_count; truples oh boy
+                #Inline record for module module_count; truples oh boy
                 inlines.append((module_count, compiler_string, this_line))
-        #for efficiency's sake, we should compare times of compilation to
+        #For efficiency's sake, we should compare times of compilation to
         #see if we can save a step
         inline_file_time = os.stat(inline_filep).st_mtime
-        #iterative loop for every module
+        #Iterative loop for every module
         for i in range(1, module_count+1):
             try:
-                #create the module filename
+                #Create the module filename
                 inline_module_extfilep = (inline_filep
                                           +MODULES_SUBDIRECTORY
                                           +str(i)+MODULE_EXT)
-                #record the time of this particular module executable
+                #Record the time of this particular module executable
                 inline_module_exec_time = os.stat(
                     inline_module_extfilep).st_mtime
-                #compare it to the original inline source file
+                #Compare it to the original inline source file
                 if inline_file_time > inline_module_exec_time:
-                    #recompile this module
-                    #printing sends errors to console
+                    #Recompile this module
+                    #Printing sends compilation errors to console
                     print module_compile(i, inline_filep, inlines)
             except OSError:
-                #assume the file does not exist, compile a new one
-                #compile this module, append output to response
-                #printing sends errors to console
+                #Assume the file does not exist, compile a new one
+                #Printing sends compilation errors to console
                 print module_compile(i, inline_filep, inlines)
-        #keep track of which module we're on
+        #Keep track of which module we're on
         module_index = 0
-        #which inline of the actual html file are we serving
+        #Which inline of the actual html file are we serving
         lindex_inline = 0
         for this_line in lines:
-            #serving a regular line of html/text
+            #Serving a regular line of html/text
             if (not present_in(this_line, inlines, 2)
                     and INLINE_FLAG not in this_line):
                 response += this_line
-                #reset the inline line index
+                #Reset the inline line index
                 if lindex_inline > 0:
                     lindex_inline = 0
-            #we have to serve the executable's output
+            #We have to serve the executable's output
             elif lindex_inline == 0:
-                #increment this so that we don't keep serving the same
+                #Increment this so that we don't keep serving the same
                 #executable for every line of inline code
                 lindex_inline += 1
                 temp_post = args
@@ -250,19 +248,19 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self._set_headers()
-        #need to use absolute paths for some odd reason
+        #Need to use absolute paths for some odd reason
         hard_path = get_abs_path(self.path[1:])
         if self.path == '/':
-            #show index for GET '/'
+            #Show index for GET '/'
             self.wfile.write(read_text_file(INDEX))
         elif self.path.endswith(EXECUTABLE_EXT):
-            #otherwise execute something if path ends with .out
+            #Otherwise execute something if path ends with .out
             self.wfile.write(execute(hard_path))
         elif self.path.endswith(INLINE_EXT):
             self.wfile.write(serve_inline(hard_path))
         else:
-            #otherwise pipe whatever file is being requested
-            #todo: make this work for more than just text/html
+            #Otherwise pipe whatever file is being requested
+            #TODO: make this work for more than just text/html
             self.wfile.write(read_text_file(hard_path))
     def do_HEAD(self):
         self._set_headers()
@@ -272,30 +270,30 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
     #place for the various filetypes
     def do_POST(self):
         self._set_headers()
-        #take hard path again because *NIX trivialities
+        #Take hard path again because *NIX trivialities
         hard_path = get_abs_path(self.path[1:])
-        #creat the POST form object
-        form = cgi.FieldStorage(
-            fp=self.rfile,
-            headers=self.headers,
-            environ={'REQUEST_METHOD':'POST',
-                     'CONTENT_TYPE':self.headers['Content-Type'],
-                    }
-        )
-        #cast those arguments into a list
+        #Create the POST form object
+        form = cgi.FieldStorage(fp=self.rfile,
+                                headers=self.headers,
+                                environ={
+                                'REQUEST_METHOD':'POST',
+                                'CONTENT_TYPE':self.headers['Content-Type'],
+                                }
+                               )
+        #Cast those arguments into a list
         arguments = args_from_form(form)
         if self.path.endswith(EXECUTABLE_EXT):
-            #otherwise execute something if path ends with .out
+            #Otherwise execute something if path ends with .out
             arguments.insert(0, hard_path)
             self.wfile.write(execute(arguments))
-        #take the inline route and send in the POST data along with it
+        #Take the inline route and send in the POST data along with it
         elif self.path.endswith(INLINE_EXT):
             self.wfile.write(serve_inline(hard_path, args=arguments))
 '''
 A class to handle threading. Very hands-off, apparently.
 '''
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
-    '''And apparently that's all'''
+    #And apparently that's all
     
 def run(server_class=ThreadedHTTPServer, handler_class=SpecialPreprocessor,
         port=80):
@@ -315,7 +313,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Heathen Webserver: a"+
                                      " ridiculously dangerous webserver that"+
                                      " allows preprocessing to any executable")
-    parser.add_argument("port", help="The port to bind to.", type=int)
+    parser.add_argument("-port", help="The port to bind to.", type=int)
     parser.add_argument("-ssl", help="Use SSL/HTTPS; specify the certificate.", 
                         type=int)
     args = parser.parse_args()
@@ -323,5 +321,7 @@ if __name__ == "__main__":
         run_ssl(port=args.port, certificate=args.ssl)
     elif args.ssl:
         run_ssl(certificate=args.ssl)
-    else:
+    elif args.port:
         run(port=args.port)
+    else:
+        run()
