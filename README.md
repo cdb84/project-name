@@ -12,23 +12,7 @@ use a systems-side language over:
 
 But for now, Frankenstein project.
 
-## How It Works
-### GET
-The webserver is specially designed to handle requests of both GET and POST a
-particular way. When a GET is received, it compares the ending extension of the
-requested path to see if it ends in '.out', our ad-hoc preprocessing file
-extension. If it does, the web server then executes that binary (if the mode
-of that file is executable) and the output is piped directly to the user in 
-the form of a new, preprocessed webpage. *"But isn't that insecure???"* No, not
-this part--the web server automatically converts all paths to long-form hard
-paths, meaning that it can only execute binaries that are present within the
-directory it is serving out of.
-### POST
-For data that is POSTed to the webserver, this is simply sent in as arguments
-to the program and then converted back into a dictionary, similar to the way
-PHP handles POST data. This is probably also equally terrible.
-
-## Usage
+## Usage/How To
 ### Server
 `python heathen.py [-port PORT] [-crt Certificate Path] [-key Keyfile Path]`
 
@@ -42,8 +26,8 @@ That's all!
 ### Example files
 In the master branch, there exists a few files:
 
-- exec.c and exec.out, which can be called to as an individual executable that
-the server can run as a pre-process
+- exec.out, the output of which can be served to a client by navigating to 
+http://webroot/exec.out
 - index.html, the index of this webroot. Nothing really special here.
 - test.hea, an inline 'heathen' file that you can *write C or Fortran code in to
 have preprocessed*:
@@ -100,6 +84,23 @@ files and paths to send into the compile statement. The opening and closing
 inline flags must be on separate lines from the rest of the HTML body (for
 now). There are some odd peculiarities, such as the need for one line buffers
 between the inlne modules.
+
+## How It Works
+### GET
+The webserver is specially designed to handle requests of both GET and POST a
+particular way. When a GET is received, it compares the ending extension of the
+requested path to see if it ends in '.out', our ad-hoc preprocessing file
+extension. If it does, the web server then executes that binary (if the mode
+of that file is executable) and the output is piped directly to the user in 
+the form of a new, preprocessed webpage. *"But isn't that insecure???"* No, not
+this part--the web server automatically converts all paths to long-form hard
+paths, meaning that it can only execute binaries that are present within the
+directory it is serving out of.
+### POST
+For data that is POSTed to the webserver, this is simply sent in as arguments
+to the program and then converted back into a dictionary, similar to the way
+PHP handles POST data. This is probably also equally terrible.
+
 ## TODO
 
 - [ ] Implement POSTing for inline files
