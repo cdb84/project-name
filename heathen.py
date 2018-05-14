@@ -11,14 +11,22 @@ import ssl
 import threading
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from SocketServer import ThreadingMixIn
+DEFAULT_MIMETYPE = "text/plain"
+MIMETYPES = {
+    "html":"text/html",
+    "jpg":"image/jpg",
+    "gif":"image/gif",
+    "png":"image/png",
+    "svg":"image/svg+xml",
+    "js":"application/javascript",
+    "css":"text/css",
+    "mp4":"video/mp4",
+    "webm":"video/webm",
+    "wav":"audio/wav"
+    }
 """
 BASIC OPERATIONAL FUNCTIONS
 """
-def get_abs_path(local):
-    """
-    Given a relative path, return the absolute path.
-    """
-    return os.path.realpath(local)
 def execute(cmd_args):
     """
     Execute the program denoted by cmd[0], sending in cmd[1:] as args
@@ -39,14 +47,14 @@ def execute(cmd_args):
         output += stderr
     process.wait()
     return output
-def read_text_file(path):
+def read_file(path):
     """
     Read a text file line by line; returns those lines compounded into a string
     """
     response = ""
     #Try opening the file
     try:
-        with open(path, 'r') as i:
+        with open(path, 'r+b') as i:
             response += i.read()
     except:
         #Return the exception
@@ -61,7 +69,15 @@ def present_in(needle, trup_haystack, index):
         if i[index] is needle:
             return True
     return False
-
+def get_mimetype(path):
+    """
+    Returns a string describing the mimetype of the given filepath.
+    """
+    ext = path.split(".")[-1]
+    try:
+        return MIMETYPES[ext]
+    except KeyError:
+        return DEFAULT_MIMETYPE
 INDEX = "index.html"
 EXECUTABLE_EXT = ".out"
 INLINE_EXT = ".hea"
@@ -71,6 +87,7 @@ INPUT = "INPUT"
 OUTPUT = "OUTPUT"
 COMPILER_STRING_SIG = "'"
 MODULES_SUBDIRECTORY = "_modules/"
+NO_COMPILE_SIG = "DO NOT COMPILE"
 """
 COMPLEX SERVING FUNCTIONS
 """
@@ -128,6 +145,10 @@ def module_compile(module_no, inline_sourcep, inlines_struct):
         if i[0] is module_no:
             compiler_string = i[1]
             inlines += i[2]
+    #Hopefully we can at some point incorporate interpreted languages such as
+    #python, bash, etc
+    if compiler_string is NO_COMPILE_SIG:
+        return ""
     subdirectory = inline_sourcep+MODULES_SUBDIRECTORY
     src_ext = get_ext(compiler_string)
     #We will write to the following file to contain the source from the inlines
@@ -171,15 +192,15 @@ def serve_inline(inline_filep, post=None):
         compiler_string = ""
         inlines = []
         record = False
-        #We will go against better convention here and say that our module
-        #list starts at one (I am so sorry)
+        #At some point, the modules is treated like an array that starts at
+        #1. I am so sorry about this, but it makes sense in this context as
+        #module_count must be 0 to indicate no modules.
         module_count = inline_file_time = 0
         #We're gonna scan through the file and take it line by line to
         #determine where the inline portion is, and how it is compiled.
         with open(inline_filep, 'r') as i:
             lines = i.readlines()
         for this_line in lines:
-            #This is going to be the hardest part
             if INLINE_FLAG in this_line:
                 #Switch record flag
                 record = not record
@@ -196,7 +217,7 @@ def serve_inline(inline_filep, post=None):
         #For efficiency's sake, we should compare times of compilation to
         #see if we can save a step
         inline_file_time = os.stat(inline_filep).st_mtime
-        #Loop for every module
+        #Loop for every module in the inline file
         for i in range(1, module_count+1):
             try:
                 #Create the module filename
@@ -217,7 +238,7 @@ def serve_inline(inline_filep, post=None):
                 print module_compile(i, inline_filep, inlines)
         #Keep track of which module we're on
         module_index = 0
-        #Which inline of the actual html file are we serving
+        #Which inline of the actual source file are we serving
         lindex_inline = 0
         for this_line in lines:
             #Serving a regular line of html/text
@@ -227,7 +248,8 @@ def serve_inline(inline_filep, post=None):
                 #Reset the inline line index
                 if lindex_inline > 0:
                     lindex_inline = 0
-            #We have to serve the executable's output
+            #Else, we have to serve the executable's output only if this is the
+            #first inline line we've encountered. All others are skipped.
             elif lindex_inline is 0:
                 #Increment this so that we don't keep serving the same
                 #executable for every line of inline code
@@ -249,14 +271,14 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
     programs written in other languages in the same webroot directory as the 
     server.
     """
-    def _set_headers(self):
+    def _set_headers(self, mimetype="text/html"):
         """
         Run of the mill headers, they get sent for every request. Always 200,
         'text/html' mimetype. This function will be changed later to serve
         different mimetypes.
         """
         self.send_response(200)
-        self.send_header('Content-type', 'text/html')
+        self.send_header("Content-type", mimetype)
         self.end_headers()
 
     def do_GET(self):
@@ -264,26 +286,26 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
         This GET method compares the extension of the request path, to see if it
         refers to a file that implies preprocessing/executables.
         """
-        self._set_headers()
         #Need to use absolute paths for some odd reason
-        hard_path = get_abs_path(self.path[1:])
+        hard_path = os.path.realpath(self.path[1:])
+        #Show index for GET '/'
         if self.path is '/':
-            #Show index for GET '/'
-            self.wfile.write(read_text_file(INDEX))
+            self._set_headers() #'text/html' mimetype for these text options
+            self.wfile.write(read_file(INDEX))
+        #Otherwise execute something if path ends with .out
         elif self.path.endswith(EXECUTABLE_EXT):
-            #Otherwise execute something if path ends with .out
+            self._set_headers() 
             self.wfile.write(execute(hard_path))
         elif self.path.endswith(INLINE_EXT):
+            self._set_headers() 
             self.wfile.write(serve_inline(hard_path))
+        #Otherwise pipe whatever file is being requested
         else:
-            #Otherwise pipe whatever file is being requested
-            #TODO: make this work for more than just text/html
-            self.wfile.write(read_text_file(hard_path))
+            self._set_headers(mimetype=get_mimetype(self.path))
+            self.wfile.write(read_file(hard_path))
     def do_HEAD(self):
         """
-        Set the headers. This one will be where we change the mimetypes, via
-        checking the path and then sending the extension as an argument to
-        set_headers()
+        Headers response. Nothing really special here.
         """
         self._set_headers()
     def do_POST(self):
@@ -293,15 +315,12 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
         """
         self._set_headers()
         #Take hard path again because *NIX trivialities
-        hard_path = get_abs_path(self.path[1:])
+        hard_path = os.path.realpath(self.path[1:])
         #Create the POST form object
-        form = cgi.FieldStorage(fp=self.rfile,
-                                headers=self.headers,
-                                environ={
-                                    'REQUEST_METHOD':'POST',
-                                    'CONTENT_TYPE':self.headers['Content-Type'],
-                                }
-                               )
+        environment = {'REQUEST_METHOD':'POST',
+                       'CONTENT_TYPE':self.headers['Content-Type'],}
+        form = cgi.FieldStorage(fp=self.rfile, headers=self.headers,
+                                environ=environment)
         #Cast those arguments into a list
         arguments = post_args_from_form(form)
         if self.path.endswith(EXECUTABLE_EXT):
@@ -337,7 +356,7 @@ def run_ssl(server_class=ThreadedHTTPServer, handler_class=SpecialPreprocessor,
     print 'Starting httpd...'
     httpd.serve_forever()
 
-if __name__ is "__main__":
+if __name__ == "__main__":
     import argparse
     clparser = argparse.ArgumentParser(description="Heathen Webserver: a"+
                                        " ridiculously dangerous webserver that"+
