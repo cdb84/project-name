@@ -345,13 +345,15 @@ def run(server_class=ThreadedHTTPServer, handler_class=SpecialPreprocessor,
     httpd.serve_forever()
 
 CERTIFICATE_P = "server.crt"
+KEY_P = "server.key"
 def run_ssl(server_class=ThreadedHTTPServer, handler_class=SpecialPreprocessor,
-            port=443, certificate=CERTIFICATE_P):
+            port=443, certificate=CERTIFICATE_P, key=KEY_P):
     """
     Run an instance of the webserver with socketed HTTPS.
     """
     httpd = server_class(('', port), handler_class)
     httpd.socket = ssl.wrap_socket(httpd.socket, certfile=certificate,
+                                   keyfile=key,
                                    server_side=True)
     print 'Starting httpd...'
     httpd.serve_forever()
@@ -362,14 +364,17 @@ if __name__ == "__main__":
                                        " ridiculously dangerous webserver that"+
                                        " allows preprocessing to any executable")
     clparser.add_argument("-port", help="The port to bind to.", type=int)
-    clparser.add_argument("-ssl",
-                          help="Use SSL/HTTPS; specify the certificate.",
-                          type=int)
+    clparser.add_argument("-key",
+                          help="Use SSL/HTTPS; specify the keyfile.",
+                          type=str)
+    clparser.add_argument("-crt",
+                           help="Use SSL/HTTPS; specify the certificate.",
+                           type=str)
     sysargs = clparser.parse_args()
-    if sysargs.port and sysargs.ssl:
-        run_ssl(port=sysargs.port, certificate=sysargs.ssl)
-    elif sysargs.ssl:
-        run_ssl(certificate=sysargs.ssl)
+    if sysargs.port and sysargs.key and sysargs.crt:
+        run_ssl(port=sysargs.port, certificate=sysargs.crt, key=sysargs.key)
+    elif sysargs.key and sysargs.crt:
+        run_ssl(certificate=sysargs.crt, key=sysargs.key)
     elif sysargs.port:
         run(port=sysargs.port)
     else:
