@@ -30,13 +30,13 @@ PHP handles POST data. This is probably also equally terrible.
 
 ## Usage
 ### Server
-`python heathen.py [port] [-ssl]`
+`python heathen.py [-port PORT] [-crt Certificate Path] [-key Keyfile Path]`
 
-Note that SSL functionality is not yet confirmed to work properly (or even 
-safely.)
+Note that SSL functionality is not confirmed to work safely.
 
 ### Browser
-Simply navigate to the webserver's address, and enter the URL of an executable. 
+Simply navigate to the webserver's address, and enter the URL of an executable
+or .hea file. 
 That's all!
 
 ### Example files
