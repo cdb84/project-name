@@ -45,13 +45,13 @@ In the master branch, there exists a few files:
 - exec.c and exec.out, which can be called to as an individual executable that
 the server can run as a pre-process
 - index.html, the index of this webroot. Nothing really special here.
-- test.hea, an inline 'heathen' file that you can *write C code in to
+- test.hea, an inline 'heathen' file that you can *write C or Fortran code in to
 have preprocessed*:
 ```
 <html>
 <head>
 </head>
-<p>This is normal html, and sent to the client as such. However, you can do
+<h1>This is normal html, and sent to the client as such. However, you can do
 $$'gcc INPUT.c -o OUTPUT'>
 #include <stdio.h>
 
@@ -59,7 +59,38 @@ int main(){
   puts("The following!");
 }
 $$>
-and it works inline!!!</p>
+and it works inline!!!</h1>
+<p>
+$$'gcc INPUT.c -o OUTPUT'>
+#include <stdio.h>
+
+int main(){
+  puts("In fact, you can do it as many ");
+  
+}
+$$>
+times as you wish,
+$$'gcc INPUT.c -o OUTPUT'>
+#include <stdio.h>
+#include <unistd.h>
+
+int main(){
+  puts(" it should always work.");
+  //sleep(60); this is here as a test of the multithreading
+}
+$$>
+<!--There must be at least one line between modules. Idk why yet.-->
+<$$'gfortran INPUT.f90 -o OUTPUT'>
+program hello
+      implicit none
+
+      WRITE(6,*) 'Hello World!'
+
+end program hello
+
+$$>
+</p>
+<!--I wish emacs would stop assuming my language.-->
 </html>
 ```
 INPUT should specify where in your compiler statement the input file-path
@@ -67,13 +98,14 @@ goes, and OUTPUT should specify the output argument positioning.
 This is done so that when the webserver live-compiles, it knows what
 files and paths to send into the compile statement. The opening and closing
 inline flags must be on separate lines from the rest of the HTML body (for
-now).
+now). There are some odd peculiarities, such as the need for one line buffers
+between the inlne modules.
 ## TODO
 
 - [ ] Implement POSTing for inline files
-- [ ] Implement HTTPS in practice (it is there in theory currently)
+- [X] Implement HTTPS in practice (it is there in theory currently)
 - [ ] Allow the uploading of files to the webserver
-- [ ] Allow more than just 'text/html' mimetypes
+- [X] Allow more than just 'text/html' mimetypes
 - [X] Do multithreading so that the entire server doesn't get held up if 
   there's one long request
 - [ ] ~Migrate the entire webserver over to C~

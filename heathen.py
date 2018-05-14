@@ -9,9 +9,11 @@ import os
 import cgi
 import ssl
 import threading
+import argparse
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from SocketServer import ThreadingMixIn
-DEFAULT_MIMETYPE = "text/plain"
+DEFAULT_MIMETYPE = "text/html"
+ALL_OTHER_MIMETYPE = "text/plain"
 MIMETYPES = {
     "html":"text/html",
     "jpg":"image/jpg",
@@ -77,11 +79,11 @@ def get_mimetype(path):
     try:
         return MIMETYPES[ext]
     except KeyError:
-        return DEFAULT_MIMETYPE
+        return ALL_OTHER_MIMETYPE
 INDEX = "index.html"
 EXECUTABLE_EXT = ".out"
 INLINE_EXT = ".hea"
-MODULE_EXT = ".mod"
+MODULE_EXT = ".hm"
 INLINE_FLAG = "$$"
 INPUT = "INPUT"
 OUTPUT = "OUTPUT"
@@ -266,16 +268,16 @@ def serve_inline(inline_filep, post=None):
     return response
 class SpecialPreprocessor(BaseHTTPRequestHandler):
     """
-    Our tailored request handler. GET behaves fairly expectedly, however POST
-    is sorta hacky. Most of these methods have the pretense of executing other
-    programs written in other languages in the same webroot directory as the 
-    server.
+    A specially tailored HTTP Request handler. This handler was created
+    in order to allow preprocessing/web applications of multiple languages of
+    odd convention, i.e. C or Fortran. The provided GET and POST methods run
+    executables in accordinace with the files being served from the webroot
+    directory.
     """
-    def _set_headers(self, mimetype="text/html"):
+    def _set_headers(self, mimetype=DEFAULT_MIMETYPE):
         """
         Run of the mill headers, they get sent for every request. Always 200,
-        'text/html' mimetype. This function will be changed later to serve
-        different mimetypes.
+        default mimetype is defined earlier in this module.
         """
         self.send_response(200)
         self.send_header("Content-type", mimetype)
@@ -284,7 +286,8 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
     def do_GET(self):
         """
         This GET method compares the extension of the request path, to see if it
-        refers to a file that implies preprocessing/executables.
+        refers to a file that implies preprocessing/executables. It will serve
+        the stdout and stderr of that executable.
         """
         #Need to use absolute paths for some odd reason
         hard_path = os.path.realpath(self.path[1:])
@@ -294,10 +297,10 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
             self.wfile.write(read_file(INDEX))
         #Otherwise execute something if path ends with .out
         elif self.path.endswith(EXECUTABLE_EXT):
-            self._set_headers() 
+            self._set_headers()
             self.wfile.write(execute(hard_path))
         elif self.path.endswith(INLINE_EXT):
-            self._set_headers() 
+            self._set_headers()
             self.wfile.write(serve_inline(hard_path))
         #Otherwise pipe whatever file is being requested
         else:
@@ -310,9 +313,11 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
         self._set_headers()
     def do_POST(self):
         """
-        POST requests are handled differently than GET. POST will pipe the
-        POST form into the compiled executable as a 1 dimmensional array.
+        POST requests are handled differently than GET. POST will pipe the POST
+        form into the compiled executable as a 1 dimmensional array. The 
+        stderr and stdout of the executable is then served to the client.
         """
+        #For now, doubtful of our mimetype being very deviant. 
         self._set_headers()
         #Take hard path again because *NIX trivialities
         hard_path = os.path.realpath(self.path[1:])
@@ -357,25 +362,31 @@ def run_ssl(server_class=ThreadedHTTPServer, handler_class=SpecialPreprocessor,
                                    server_side=True)
     print 'Starting httpd...'
     httpd.serve_forever()
-
-if __name__ == "__main__":
-    import argparse
-    clparser = argparse.ArgumentParser(description="Heathen Webserver: a"+
-                                       " ridiculously dangerous webserver that"+
-                                       " allows preprocessing to any executable")
-    clparser.add_argument("-port", help="The port to bind to.", type=int)
-    clparser.add_argument("-key",
-                          help="Use SSL/HTTPS; specify the keyfile.",
-                          type=str)
-    clparser.add_argument("-crt",
-                           help="Use SSL/HTTPS; specify the certificate.",
-                           type=str)
-    sysargs = clparser.parse_args()
-    if sysargs.port and sysargs.key and sysargs.crt:
-        run_ssl(port=sysargs.port, certificate=sysargs.crt, key=sysargs.key)
-    elif sysargs.key and sysargs.crt:
-        run_ssl(certificate=sysargs.crt, key=sysargs.key)
-    elif sysargs.port:
-        run(port=sysargs.port)
+def main():
+    """
+    Main webserving function.
+    """
+    cli_parser = argparse.ArgumentParser(description="Heathen Webserver: a"+
+                                         " ridiculously dangerous webserver"+
+                                         " that allows preprocessing to any"+
+                                         " executable")
+    cli_parser.add_argument("-port", help="The port to bind to.", type=int)
+    cli_parser.add_argument("-key",
+                            help="Use SSL/HTTPS; specify the keyfile.",
+                            type=str)
+    cli_parser.add_argument("-crt",
+                            help="Use SSL/HTTPS; specify the certificate.",
+                            type=str)
+    cli_args = cli_parser.parse_args()
+    if cli_args.port and cli_args.key and cli_args.crt:
+        run_ssl(port=cli_args.port, certificate=cli_args.crt, key=cli_args.key)
+    elif cli_args.key and not cli_args.crt or cli_args.crt and not cli_args.key:
+        raise Exception("Missing keyfile or certfile in args.")
+    elif cli_args.key and cli_args.crt:
+        run_ssl(certificate=cli_args.crt, key=cli_args.key)
+    elif cli_args.port:
+        run(port=cli_args.port)
     else:
         run()
+if __name__ == "__main__":
+    main()
