@@ -1,4 +1,8 @@
 #/usr/bin/python
+"""
+Heathen Webserver: a webserver that does back-end preprocessing in whatever
+language you want, be it C, Fortran, or Assembly.
+"""
 import subprocess
 import sys
 import os
@@ -66,7 +70,6 @@ INLINE_FLAG = "$$"
 INPUT = "INPUT"
 OUTPUT = "OUTPUT"
 COMPILER_STRING_SIG = "'"
-#So when looking for modules, it is hard_path+MODULES_SUBDIRECTORY
 MODULES_SUBDIRECTORY = "_modules/"
 """
 COMPLEX SERVING FUNCTIONS
@@ -122,7 +125,7 @@ def module_compile(module_no, inline_sourcep, inlines_struct):
     compiler_string = inlines = ""
     #Extrapolate data from the truple
     for i in inlines_struct:
-        if i[0] == module_no:
+        if i[0] is module_no:
             compiler_string = i[1]
             inlines += i[2]
     subdirectory = inline_sourcep+MODULES_SUBDIRECTORY
@@ -149,7 +152,7 @@ def module_compile(module_no, inline_sourcep, inlines_struct):
     #Now compile that file we just wrote using the source-defined compiler
     #string
     return execute(post_args)
-def serve_inline(inline_filep, post=[]):
+def serve_inline(inline_filep, post=None):
     """
     Generates a response from an inline file; this funcion will attempt the
     following:
@@ -159,6 +162,9 @@ def serve_inline(inline_filep, post=[]):
       C) to compile new modules if they don't exist
       D) to run these newly compiled modules
     """
+    #Apparently this is the safesty way to default a blank list
+    if post is None:
+        post = []
     response = ""
     #Try/except in case this file does not exist, etcetera
     try:
@@ -190,7 +196,7 @@ def serve_inline(inline_filep, post=[]):
         #For efficiency's sake, we should compare times of compilation to
         #see if we can save a step
         inline_file_time = os.stat(inline_filep).st_mtime
-        #Iterative loop for every module
+        #Loop for every module
         for i in range(1, module_count+1):
             try:
                 #Create the module filename
@@ -222,7 +228,7 @@ def serve_inline(inline_filep, post=[]):
                 if lindex_inline > 0:
                     lindex_inline = 0
             #We have to serve the executable's output
-            elif lindex_inline == 0:
+            elif lindex_inline is 0:
                 #Increment this so that we don't keep serving the same
                 #executable for every line of inline code
                 lindex_inline += 1
@@ -240,7 +246,8 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
     """
     Our tailored request handler. GET behaves fairly expectedly, however POST
     is sorta hacky. Most of these methods have the pretense of executing other
-    programs written in other languages in the same webroot directory as the server.
+    programs written in other languages in the same webroot directory as the 
+    server.
     """
     def _set_headers(self):
         """
@@ -260,7 +267,7 @@ class SpecialPreprocessor(BaseHTTPRequestHandler):
         self._set_headers()
         #Need to use absolute paths for some odd reason
         hard_path = get_abs_path(self.path[1:])
-        if self.path == '/':
+        if self.path is '/':
             #Show index for GET '/'
             self.wfile.write(read_text_file(INDEX))
         elif self.path.endswith(EXECUTABLE_EXT):
@@ -330,7 +337,7 @@ def run_ssl(server_class=ThreadedHTTPServer, handler_class=SpecialPreprocessor,
     print 'Starting httpd...'
     httpd.serve_forever()
 
-if __name__ == "__main__":
+if __name__ is "__main__":
     import argparse
     clparser = argparse.ArgumentParser(description="Heathen Webserver: a"+
                                        " ridiculously dangerous webserver that"+
