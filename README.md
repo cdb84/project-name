@@ -65,16 +65,6 @@ int main(){
 $$>
 <!--There must be at least one line between modules. Idk why yet.-->
 <$$'gfortran INPUT.f90 -o OUTPUT'>
-#include <stdio.h>
-#include <unistd.h>
-
-int main(){
-  puts(" it should always work.");
-  //sleep(60); this is here as a test of the multithreading
-}
-$$>
-<!--There must be at least one line between modules. Idk why yet.-->
-<$$'gfortran INPUT.f90 -o OUTPUT'>
 program hello
 implicit none
 character (len=:), allocatable :: hw
