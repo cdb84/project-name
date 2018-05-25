@@ -132,10 +132,10 @@ PHP handles POST data. This is probably also equally terrible.
 
 ## TODO
 
+- [ ] Clean up source code from modules after OTF compiling
 - [ ] Implement POSTing for inline files
 - [X] Implement HTTPS in practice (it is there in theory currently)
 - [ ] Allow the uploading of files to the webserver
 - [X] Allow more than just 'text/html' mimetypes
 - [X] Do multithreading so that the entire server doesn't get held up if 
   there's one long request
-- [ ] ~Migrate the entire webserver over to C~
