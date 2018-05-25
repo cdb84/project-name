@@ -65,11 +65,40 @@ int main(){
 $$>
 <!--There must be at least one line between modules. Idk why yet.-->
 <$$'gfortran INPUT.f90 -o OUTPUT'>
+#include <stdio.h>
+#include <unistd.h>
+
+int main(){
+  puts(" it should always work.");
+  //sleep(60); this is here as a test of the multithreading
+}
+$$>
+<!--There must be at least one line between modules. Idk why yet.-->
+<$$'gfortran INPUT.f90 -o OUTPUT'>
 program hello
-      implicit none
+implicit none
+character (len=:), allocatable :: hw
 
-      WRITE(6,*) 'Hello World!'
+hw = "Hello World!"
 
+WRITE(6,*) reverse(hw, LEN(HW))
+
+contains
+
+function reverse(in_str, str_length)
+implicit none
+
+character (len =:), allocatable :: reverse
+
+integer :: str_length, n
+character (len=:), allocatable :: in_str
+character :: swap_char
+
+do n = str_length,1,-1
+   swap_char = in_str(n:n)
+   reverse = reverse//swap_char
+end do
+end function reverse
 end program hello
 
 $$>
