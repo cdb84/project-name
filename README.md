@@ -1,4 +1,4 @@
-# heathen-webserver
+# AnythingGoes Webserver (formerly heathen-webserver)
 A webserver I shouldn't have made but still did. On the plus side,
 you can do webpage preprocessing in C now.
 ## This Is Terrifying
